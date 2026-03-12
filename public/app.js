@@ -73,6 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadAssets();
     
     window.addEventListener('resize', handleResize);
+    window.addEventListener('focus', handleResize);
 });
 
 const switchTab = (targetId, tabName) => {
@@ -565,9 +566,17 @@ function limitPan() {
 }
 
 function resizeCanvas(reset) {
+    if(!canvas) return;
     const parent = document.getElementById('canvas_container');
-    const panelW = document.getElementById('workspace_inner').clientWidth;
-    const panelH = document.getElementById('workspace_inner').clientHeight;
+    const workspace = document.getElementById('workspace_inner');
+    if(!workspace) return;
+    
+    const panelW = workspace.clientWidth;
+    const panelH = workspace.clientHeight;
+
+    // GUARD: If tab is backgrounded or dimensions are zeroed by browser, skip resize
+    // This prevents the "shrunken/glitched background" when switching apps.
+    if (panelW < 50 || panelH < 50) return;
 
     const scale = Math.min(
         (panelW - 40) / virtualFormat.w,
@@ -727,7 +736,8 @@ function setCanvasBackgroundImage(url) {
             top: virtualFormat.h / 2,
             selectable: false,
             evented: false,
-            locked: true
+            locked: true,
+            objectCaching: false // CRITICAL: prevents background from glitching after app switching
         });
         canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
         saveHistory();
